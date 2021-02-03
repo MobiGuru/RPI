@@ -1,0 +1,17 @@
+
+config section 'local'
+	option socket_path '/var/run/docker.sock'
+	option status_path '/tmp/.docker_action_status'
+	option debug 'false'
+	option debug_path '/tmp/.docker_debug'
+	option remote_endpoint 'false'
+	option daemon_ea 'true'
+	option daemon_data_root '/opt/docker/'
+	option remote_port '2375'
+	list daemon_registry_mirrors 'https://mirror.baidubce.com'
+	list daemon_registry_mirrors 'https://hub-mirror.c.163.com'
+	list daemon_registry_mirrors 'https://docker.mirrors.ustc.edu.cn'
+	list daemon_hosts 'unix:///var/run/docker.sock'
+	list ac_allowed_interface 'eth0'
+	option daemon_log_level 'error'
+

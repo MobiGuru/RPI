@@ -1,0 +1,381 @@
+Subject: [PATCH] remove luci-app-sfe dns acc
+
+---
+ Makefile                            |   6 +-
+ luasrc/controller/sfe.lua           |   7 +-
+ luasrc/model/cbi/sfe.lua            |  10 --
+ luasrc/view/sfe/status.htm          |  24 +++--
+ po/zh-cn/sfe.po                     |  12 ---
+ root/etc/config/sfe                 |   5 +-
+ root/etc/init.d/sfe                 | 163 ----------------------------
+ root/etc/uci-defaults/sfe           |   1 -
+ root/usr/share/dnscache-watchdog.sh |   9 --
+ 9 files changed, 20 insertions(+), 214 deletions(-)
+ delete mode 100644 root/usr/share/dnscache-watchdog.sh
+
+diff --git a/Makefile b/Makefile
+index 7320a83..70a721c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,10 +6,10 @@
+ include $(TOPDIR)/rules.mk
+ 
+ LUCI_TITLE:=LuCI support for Turbo ACC (SFE)
+-LUCI_DEPENDS:=+kmod-fast-classifier +pdnsd-alt +kmod-tcp-bbr
++LUCI_DEPENDS:=+kmod-fast-classifier +kmod-tcp-bbr
+ LUCI_PKGARCH:=all
+-PKG_VERSION:=1.0
+-PKG_RELEASE:=13
++PKG_VERSION:=1.0-mod
++PKG_RELEASE:=99
+ 
+ include $(TOPDIR)/feeds/luci/luci.mk
+ 
+diff --git a/luasrc/controller/sfe.lua b/luasrc/controller/sfe.lua
+index ab38958..45609a1 100644
+--- a/luasrc/controller/sfe.lua
++++ b/luasrc/controller/sfe.lua
+@@ -24,16 +24,11 @@ local function is_fullcone()
+ 	return luci.sys.call("iptables -t nat -L -n --line-numbers | grep FULLCONENAT >/dev/null") == 0
+ end
+ 
+-local function is_dns()
+-	return luci.sys.call("pgrep dnscache >/dev/null") == 0
+-end
+-
+ function action_status()
+ 	luci.http.prepare_content("application/json")
+ 	luci.http.write_json({
+ 		run_state = is_running(),
+ 		down_state = is_bbr(),
+-		up_state = is_fullcone(),
+-		dns_state = is_dns()
++		up_state = is_fullcone()
+ 	})
+ end
+\ No newline at end of file
+diff --git a/luasrc/model/cbi/sfe.lua b/luasrc/model/cbi/sfe.lua
+index bb4c476..f066fd2 100644
+--- a/luasrc/model/cbi/sfe.lua
++++ b/luasrc/model/cbi/sfe.lua
+@@ -32,14 +32,4 @@ bbr.default = 0
+ bbr.rmempty = false
+ bbr.description = translate("Bottleneck Bandwidth and Round-trip propagation time (BBR)")
+ 
+-dns = s:option(Flag, "dns", translate("DNS Acceleration"))
+-dns.default = 0
+-dns.rmempty = false
+-dns.description = translate("Enable DNS Cache Acceleration and anti ISP DNS pollution")
+-
+-o = s:option(Value, "dns_server", translate("Upsteam DNS Server"))
+-o.default = "114.114.114.114,114.114.115.115"
+-o.description = translate("Muitiple DNS server can saperate with ','")
+-o:depends("dns", 1)
+-
+ return m
+diff --git a/luasrc/view/sfe/status.htm b/luasrc/view/sfe/status.htm
+index 6d35265..89cc292 100644
+--- a/luasrc/view/sfe/status.htm
++++ b/luasrc/view/sfe/status.htm
+@@ -1,10 +1,18 @@
+ <fieldset class="cbi-section">
+ 	<legend><%:Running Status%></legend>
+ 	<table width="100%" cellspacing="10" id="_xlnetacc_status_table">
+-		<tr><td width="33%">SFE 加速状态</td><td id="_run_state"><em><%:Collecting data...%></em></td></tr>
+-		<tr><td width="33%">BBR 加速</td><td id="_down_state"><em><%:Collecting data...%></em></td></tr>
+-		<tr><td width="33%">FULLCONE NAT加速</td><td id="_up_state"><em><%:Collecting data...%></em></td></tr>
+-		<tr><td width="33%">DNS 加速</td><td id="_dns_state"><em><%:Collecting data...%></em></td></tr>
++		<tr>
++			<td width="33%">SFE 加速状态</td>
++			<td id="_run_state"><em><%:Collecting data...%></em></td>
++		</tr>
++		<tr>
++			<td width="33%">BBR 加速</td>
++			<td id="_down_state"><em><%:Collecting data...%></em></td>
++		</tr>
++		<tr>
++			<td width="33%">FULLCONE NAT加速</td>
++			<td id="_up_state"><em><%:Collecting data...%></em></td>
++		</tr>
+ 	</table>
+ </fieldset>
+ 
+@@ -12,13 +20,11 @@
+ 	var run_state = document.getElementById('_run_state');
+ 	var down_state = document.getElementById('_down_state');
+ 	var up_state = document.getElementById('_up_state');
+-	var dns_state = document.getElementById('_dns_state');
+-	XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "network", "sfe", "status")%>', null, function(x, status) {
+-		if ( x && x.status == 200 ) {
++	XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "network", "sfe", "status")%>', null, function (x, status) {
++		if (x && x.status == 200) {
+ 			run_state.innerHTML = status.run_state ? '<em><b><font color=green><%:RUNNING%></font></b></em>' : '<em><b><font color=red><%:NOT RUNNING%></font></b></em>';
+ 			down_state.innerHTML = status.down_state ? '<em><b><font color=green><%:RUNNING%></font></b></em>' : '<em><b><font color=red><%:NOT RUNNING%></font></b></em>';
+ 			up_state.innerHTML = status.up_state ? '<em><b><font color=green><%:RUNNING%></font></b></em>' : '<em><b><font color=red><%:NOT RUNNING%></font></b></em>';
+-			dns_state.innerHTML = status.dns_state ? '<em><b><font color=green><%:RUNNING%></font></b></em>' : '<em><b><font color=red><%:NOT RUNNING%></font></b></em>';
+ 		}
+ 	});
+-//]]></script>
++//]]></script>
+\ No newline at end of file
+diff --git a/po/zh-cn/sfe.po b/po/zh-cn/sfe.po
+index 044d2f6..2cbf677 100644
+--- a/po/zh-cn/sfe.po
++++ b/po/zh-cn/sfe.po
+@@ -39,15 +39,3 @@ msgstr "启用 BBR"
+ 
+ msgid "Bottleneck Bandwidth and Round-trip propagation time (BBR)"
+ msgstr "BBR拥塞控制算法可以加强TCP应用表现，但会降低路由器本机上的WIFI吞吐性能"
+-
+-msgid "DNS Acceleration"
+-msgstr "DNS 加速"
+-
+-msgid "Enable DNS Cache Acceleration and anti ISP DNS pollution"
+-msgstr "启用DNS多线程查询、缓存，并防止ISP的DNS广告和域名劫持"
+-
+-msgid "Upsteam DNS Server"
+-msgstr "上游 DNS 服务器(国内)"
+-
+-msgid "Muitiple DNS server can saperate with ','"
+-msgstr "支持多个上游DNS服务器，用','分隔（注意用英文逗号).请填写您最快的DNS服务器"
+diff --git a/root/etc/config/sfe b/root/etc/config/sfe
+index fc0b52e..126bbcf 100644
+--- a/root/etc/config/sfe
++++ b/root/etc/config/sfe
+@@ -3,7 +3,4 @@ config sfe 'config'
+ 	option enabled '1'
+ 	option ipv6 '0'
+ 	option wifi '0'
+-	option bbr '0'
+-	option dns '0'
+-	option dns_server '114.114.114.114,114.114.115.115'
+-
++	option bbr '1'
+diff --git a/root/etc/init.d/sfe b/root/etc/init.d/sfe
+index 061c5d6..a41e086 100755
+--- a/root/etc/init.d/sfe
++++ b/root/etc/init.d/sfe
+@@ -5,152 +5,10 @@ START=90
+ 
+ USE_PROCD=1
+ 
+-PDNSD_BIN="/var/sbin/dnscache"
+-DNSMASQ_RESTART=N
+-DNS_SERVER="114.114.114.114,114.114.115.115"
+-
+-pdnsd_genconfig() {
+-	DNS_SERVER=$(uci get sfe.config.dns_server 2>/dev/null)
+-
+-	[ -d /var/etc ] || mkdir -p /var/etc
+-
+-	if [ ! -f /var/dnscache/pdnsd.cache ]; then
+-		mkdir -p /var/dnscache
+-		echo -ne "pd13\000\000\000\000" >/var/dnscache/pdnsd.cache
+-		chown -R nobody.nogroup /var/dnscache
+-	fi
+-
+-	cat <<-EOF >/var/etc/dnscache.conf
+-		global {
+-			perm_cache=1024;        # dns缓存大小，单位KB，建议不要写的太大
+-			cache_dir="/var/dnscache";     # 缓存文件的位置
+-			pid_file="/var/run/dnscache.pid";
+-			run_as="nobody";
+-			server_ip = 0.0.0.0;        # pdnsd监听的网卡，0.0.0.0是全部网卡
+-			server_port=5333;           # pdnsd监听的端口，不要和别的服务冲突即可
+-			status_ctl = on;
+-			paranoid=on;                  # 二次请求模式，如果请求主DNS服务器返回的是垃圾地址，就向备用服务器请求
+-			query_method=udp_only;
+-			neg_domain_pol = off;
+-			par_queries = 400;          # 最多同时请求数
+-			min_ttl = 1h;               # DNS结果最短缓存时间
+-			max_ttl = 1w;               # DNS结果最长缓存时间
+-			timeout = 10;               # DNS请求超时时间，单位秒
+-		}
+-
+-		server {
+-			label = "routine";
+-			ip = $DNS_SERVER;     # 这里为主要上级 dns 的 ip 地址，建议填写一个当地最快的DNS地址
+-			timeout = 5;              # DNS请求超时时间
+-			reject = 74.125.127.102,  # 以下是脏IP，也就是DNS污染一般会返回的结果，如果收到如下DNS结果会触发二次请求（TCP协议一般不会碰到脏IP）
+-				74.125.155.102,
+-				74.125.39.102,
+-				74.125.39.113,
+-				209.85.229.138,
+-				128.121.126.139,
+-				159.106.121.75,
+-				169.132.13.103,
+-				192.67.198.6,
+-				202.106.1.2,
+-				202.181.7.85,
+-				203.161.230.171,
+-				203.98.7.65,
+-				207.12.88.98,
+-				208.56.31.43,
+-				209.145.54.50,
+-				209.220.30.174,
+-				209.36.73.33,
+-				211.94.66.147,
+-				213.169.251.35,
+-				216.221.188.182,
+-				216.234.179.13,
+-				243.185.187.39,
+-				37.61.54.158,
+-				4.36.66.178,
+-				46.82.174.68,
+-				59.24.3.173,
+-				64.33.88.161,
+-				64.33.99.47,
+-				64.66.163.251,
+-				65.104.202.252,
+-				65.160.219.113,
+-				66.45.252.237,
+-				69.55.52.253,
+-				72.14.205.104,
+-				72.14.205.99,
+-				78.16.49.15,
+-				8.7.198.45,
+-				93.46.8.89,
+-				37.61.54.158,
+-				243.185.187.39,
+-				190.93.247.4,
+-				190.93.246.4,
+-				190.93.245.4,
+-				190.93.244.4,
+-				65.49.2.178,
+-				189.163.17.5,
+-				23.89.5.60,
+-				49.2.123.56,
+-				54.76.135.1,
+-				77.4.7.92,
+-				118.5.49.6,
+-				159.24.3.173,
+-				188.5.4.96,
+-				197.4.4.12,
+-				220.250.64.24,
+-				243.185.187.30,
+-				249.129.46.48,
+-				253.157.14.165;
+-			reject_policy = fail;
+-		}
+-
+-		server {
+-			label = "special";                  # 这个随便写
+-			ip = 208.67.222.222,208.67.220.220; # 这里为备用DNS服务器的 ip 地址
+-			port = 5353;                        # 推荐使用53以外的端口（DNS服务器必须支持）
+-			proxy_only = on;
+-			timeout = 5;
+-		}
+-
+-		source {
+-			owner=localhost;
+-		// serve_aliases=on;
+-			file="/etc/hosts";
+-		}
+-
+-		rr {
+-			name=localhost;
+-			reverse=on;
+-			a=127.0.0.1;
+-			owner=localhost;
+-			soa=localhost,root.localhost,42,86400,900,86400,86400;
+-		}
+-	EOF
+-
+-	[ -d /var/sbin ] || mkdir -p /var/sbin
+-	[ -f /var/sbin/dnscache ] || ln -s /usr/sbin/pdnsd /var/sbin/dnscache
+-}
+-
+-change_dns() {
+-	uci delete dhcp.@dnsmasq[0].server >/dev/null 2>&1
+-	uci add_list dhcp.@dnsmasq[0].server=127.0.0.1#5333
+-	uci set dhcp.@dnsmasq[0].resolvfile=/tmp/resolv.conf.d/resolv.conf.auto
+-	uci set dhcp.@dnsmasq[0].noresolv=0
+-	uci commit dhcp
+-}
+-
+-revert_dns() {
+-	uci del_list dhcp.@dnsmasq[0].server=127.0.0.1#5333 >/dev/null 2>&1
+-	uci set dhcp.@dnsmasq[0].resolvfile=/tmp/resolv.conf.d/resolv.conf.auto
+-	uci set dhcp.@dnsmasq[0].noresolv=0
+-	uci commit dhcp
+-}
+-
+ start_service() {
+ 	enable=$(uci get sfe.config.enabled 2>/dev/null)
+ 	wifi=$(uci get sfe.config.wifi)
+ 	ipv6=$(uci get sfe.config.ipv6)
+-	dns=$(uci get sfe.config.dns 2>/dev/null)
+ 	bbr=$(uci get sfe.config.bbr 2>/dev/null)
+ 
+ 	if [ $enable -eq 1 ]; then
+@@ -170,40 +28,19 @@ start_service() {
+ 		rmmod fast_classifier >/dev/null 2>&1
+ 	fi
+ 
+-	if [ $dns -eq 1 ]; then
+-		pdnsd_genconfig
+-		procd_open_instance
+-		procd_set_param command "$PDNSD_BIN" -c /var/etc/dnscache.conf
+-		procd_set_param respawn
+-		procd_set_param stderr 1
+-		procd_close_instance
+-		change_dns
+-	else
+-		revert_dns
+-	fi
+-
+ 	if [ $bbr -eq 1 ]; then
+ 		sysctl -w net.ipv4.tcp_congestion_control=bbr
+ 	else
+ 		sysctl -w net.ipv4.tcp_congestion_control=cubic
+ 	fi
+-	if [ "$DNSMASQ_RESTART" = N ]; then
+-		/etc/init.d/dnsmasq restart
+-	fi
+ }
+ 
+ stop_service() {
+ 	enable=$(uci get sfe.config.enabled 2>/dev/null)
+ 	[ $enable -ne 1 ] && rmmod fast_classifier >/dev/null 2>&1
+-	revert_dns
+-	if [ "$DNSMASQ_RESTART" = N ]; then
+-		/etc/init.d/dnsmasq restart
+-	fi
+ }
+ 
+ restart() {
+-	DNSMASQ_RESTART=Y
+ 	stop
+ 	start
+-	/etc/init.d/dnsmasq restart && echo "DNSMASQ restart"
+ }
+diff --git a/root/etc/uci-defaults/sfe b/root/etc/uci-defaults/sfe
+index 50adb16..fb63e9b 100755
+--- a/root/etc/uci-defaults/sfe
++++ b/root/etc/uci-defaults/sfe
+@@ -7,7 +7,6 @@ uci -q batch <<-EOF >/dev/null
+ 	commit ucitrack
+ EOF
+ 
+-[ ! -f /usr/sbin/dnscache ] && ln /usr/sbin/pdnsd /usr/sbin/dnscache
+ /etc/init.d/sfe enable
+ 
+ rm -f /tmp/luci-indexcache
+diff --git a/root/usr/share/dnscache-watchdog.sh b/root/usr/share/dnscache-watchdog.sh
+deleted file mode 100755
+index 4bde67d..0000000
+--- a/root/usr/share/dnscache-watchdog.sh
++++ /dev/null
+@@ -1,9 +0,0 @@
+-#!/bin/sh
+-
+-dns_enable=$(uci get sfe.config.dns 2>/dev/null)
+-
+-if [ $dns_enable -eq 1 ]; then
+-	if ! pidof dnscache>/dev/null; then
+-	   /etc/init.d/sfe restart
+-  fi
+-fi
+-- 
+2.29.2
+

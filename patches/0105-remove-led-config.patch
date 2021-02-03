@@ -1,0 +1,22 @@
+Subject: [PATCH] remove led config
+
+---
+ modules/luci-mod-admin-full/luasrc/controller/admin/system.lua | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/modules/luci-mod-admin-full/luasrc/controller/admin/system.lua b/modules/luci-mod-admin-full/luasrc/controller/admin/system.lua
+index 6ccf220..d253cab 100644
+--- a/modules/luci-mod-admin-full/luasrc/controller/admin/system.lua
++++ b/modules/luci-mod-admin-full/luasrc/controller/admin/system.lua
+@@ -28,7 +28,7 @@ function index()
+ 	end
+ 
+ 	local nodes, number = fs.glob("/sys/class/leds/*")
+-	if number > 0 then
++	if number > 99 then
+ 		entry({"admin", "system", "leds"}, cbi("admin_system/leds"), _("<abbr title=\"Light Emitting Diode\">LED</abbr> Configuration"), 60)
+ 	end
+ 
+-- 
+2.29.2
+
