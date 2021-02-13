@@ -131,3 +131,8 @@ popd
 
 # Change default shell to zsh
 sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
+
+# fix cifsmount
+pushd package/lean/luci-app-cifs-mount/root/etc/init.d
+sed -i 's/mount -t cifs/mount.cifs/g' cifs
+popd
