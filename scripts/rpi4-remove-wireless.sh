@@ -6,4 +6,7 @@
 # Lisence: MIT
 # Author: BingFoon
 #=================================================
-sed -i "155,158 d" target/linux/bcm27xx/image/Makefile
+sed -i '/DEVICE_PACKAGES :=/d' target/linux/bcm27xx/image/Makefile
+sed -i '/cypress-firmware-/d' target/linux/bcm27xx/image/Makefile
+sed -i '/cypress-nvram-/d' target/linux/bcm27xx/image/Makefile
+sed -i '/kmod-brcmfmac/d' target/linux/bcm27xx/image/Makefile
