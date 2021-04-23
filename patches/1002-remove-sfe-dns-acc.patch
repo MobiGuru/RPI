@@ -8,7 +8,7 @@ Subject: [PATCH] remove luci-app-sfe dns acc
  po/zh-cn/sfe.po                     |  12 ---
  root/etc/config/sfe                 |   5 +-
  root/etc/init.d/sfe                 | 163 ----------------------------
- root/etc/uci-defaults/sfe           |   1 -
+ root/etc/uci-defaults/luci-sfe      |   1 -
  root/usr/share/dnscache-watchdog.sh |   9 --
  9 files changed, 20 insertions(+), 214 deletions(-)
  delete mode 100644 root/usr/share/dnscache-watchdog.sh
@@ -349,10 +349,10 @@ index 061c5d6..a41e086 100755
  	start
 -	/etc/init.d/dnsmasq restart && echo "DNSMASQ restart"
  }
-diff --git a/root/etc/uci-defaults/sfe b/root/etc/uci-defaults/sfe
+diff --git a/root/etc/uci-defaults/luci-sfe b/root/etc/uci-defaults/luci-sfe
 index 50adb16..fb63e9b 100755
---- a/root/etc/uci-defaults/sfe
-+++ b/root/etc/uci-defaults/sfe
+--- a/root/etc/uci-defaults/luci-sfe
++++ b/root/etc/uci-defaults/luci-sfe
 @@ -7,7 +7,6 @@ uci -q batch <<-EOF >/dev/null
  	commit ucitrack
  EOF
