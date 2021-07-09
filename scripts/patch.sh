@@ -17,5 +17,5 @@ git apply ../patches/0102-luci-theme-argon-css.patch --directory=package/communi
 # git apply ../patches/0104-fix-edge-some-error.patch --directory=package/community/luci-theme-edge
 
 # git apply ../patches/1001-luci-vlmcsd-fw-rule-name.patch --directory=package/lean/luci-app-vlmcsd
-git apply ../patches/1002-remove-sfe-dns-acc.patch --directory=package/lean/luci-app-sfe
+# git apply ../patches/1002-remove-sfe-dns-acc.patch --directory=package/lean/luci-app-sfe
 # git apply ../patches/1003-remove-flowoffload-dns-acc.patch --directory=package/lean/luci-app-flowoffload
