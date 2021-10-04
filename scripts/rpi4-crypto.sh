@@ -24,4 +24,4 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_CRYPTO_SHA512_ARM64=y
 CONFIG_CRYPTO_SIMD=y
 CONFIG_REALTEK_PHY=y
-' >> ./target/linux/bcm27xx/bcm2711/config-5.4
+' >> ./target/linux/bcm27xx/bcm2711/config-5.10
