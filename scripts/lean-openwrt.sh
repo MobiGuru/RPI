@@ -24,12 +24,12 @@ git clone --depth=1 https://github.com/Lienol/openwrt-package
 #git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall
 
 # Add luci-app-vssr <M>
-git clone --depth=1 https://github.com/jerrykuku/lua-maxminddb.git
-git clone --depth=1 https://github.com/jerrykuku/luci-app-vssr
+#git clone --depth=1 https://github.com/jerrykuku/lua-maxminddb.git
+#git clone --depth=1 https://github.com/jerrykuku/luci-app-vssr
 
 # Add mentohust & luci-app-mentohust
-git clone --depth=1 https://github.com/BoringCat/luci-app-mentohust
-git clone --depth=1 https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk
+#git clone --depth=1 https://github.com/BoringCat/luci-app-mentohust
+#git clone --depth=1 https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk
 
 # Add minieap & luci-proto-minieap
 #git clone --depth=1 https://github.com/ysc3839/luci-proto-minieap
